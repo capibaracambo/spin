@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Sméan — Spin to Win!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-dark:#0c776f;
+    --teal-darker:#0a5148;
+    --teal-mint:#dff0ec;
+    --cream:#f6f4ee;
+    --gold:#cf9a35;
+    --ink:#161616;
+    --white:#ffffff;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    height:100%;
+    width:100%;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 12%, #ffffff 0%, var(--cream) 55%, #ece8dc 100%);
+    font-family:'Plus Jakarta Sans', Arial, sans-serif;
+    color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .stage{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:clamp(10px,2vh,22px);
+    padding:clamp(8px,2vh,24px);
+  }
+
+  .brandbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    letter-spacing:.5px;
+  }
+  .brandbar .word{
+    font-size:clamp(18px,2.4vmin,26px);
+    font-weight:800;
+    color:var(--teal-darker);
+  }
+  .brandbar .sub{
+    font-size:clamp(11px,1.4vmin,14px);
+    font-weight:600;
+    color:var(--gold);
+  }
+
+  /* ---------- WHEEL ---------- */
+  .wheel-wrap{
+    position:relative;
+    width:min(78vmin, 640px);
+    height:min(78vmin, 640px);
+    flex:0 0 auto;
+  }
+
+  .pointer{
+    position:absolute;
+    top:-1.5%;
+    left:50%;
+    transform:translateX(-50%);
+    width:9%;
+    z-index:5;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,.25));
+  }
+
+  .wheel-outer{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    background:var(--white);
+    box-shadow:
+      0 18px 40px rgba(15,60,52,.28),
+      0 2px 0 rgba(255,255,255,.6) inset;
+    padding:1.6%;
+  }
+
+  .wheel-ring{
+    position:relative;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    border:5px solid var(--teal-dark);
+    overflow:hidden;
+    background:var(--white);
+  }
+
+  #wheelSVG{
+    display:block;
+    width:100%;
+    height:100%;
+    transform:rotate(0deg);
+    will-change:transform;
+  }
+  #wheelSVG.spinning{
+    transition: transform 4.2s cubic-bezier(0.15, 0.75, 0.12, 1);
+  }
+
+  .dot{
+    fill:var(--white);
+    stroke:var(--teal-dark);
+    stroke-width:2;
+  }
+
+  .hub{
+    position:absolute;
+    top:50%;left:50%;
+    width:34%;
+    height:34%;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:var(--teal-dark);
+    border:5px solid var(--teal-dark);
+    box-shadow:0 6px 16px rgba(0,0,0,.18);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    z-index:4;
+    cursor:pointer;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .hub .logo{
+    font-size:clamp(15px,3vmin,24px);
+    font-weight:900;
+    color:var(--ink);
+    letter-spacing:.5px;
+    line-height:1;
+  }
+  .hub .logo span{color:var(--teal-dark);}
+  .hub .tag{
+    margin-top:6%;
+    font-size:clamp(8px,1.5vmin,12px);
+    font-weight:700;
+    color:var(--teal-dark);
+    letter-spacing:.5px;
+  }
+  .hub:active{transform:translate(-50%,-50%) scale(.97);}
+  .hub.disabled{cursor:default; opacity:.85;}
+
+  /* ---------- SPIN BUTTON ---------- */
+  .spin-btn{
+    appearance:none;
+    border:none;
+    outline:none;
+    cursor:pointer;
+    background:linear-gradient(180deg, var(--teal-dark), var(--teal-darker));
+    color:var(--white);
+    font-weight:800;
+    font-size:clamp(14px,2vmin,18px);
+    letter-spacing:.5px;
+    padding:clamp(10px,1.6vh,14px) clamp(28px,4vw,44px);
+    border-radius:999px;
+    box-shadow:0 8px 18px rgba(15,60,52,.35);
+    transition:transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+  }
+  .spin-btn:hover{transform:translateY(-2px);}
+  .spin-btn:active{transform:translateY(0px) scale(.98);}
+  .spin-btn:disabled{
+    opacity:.5;
+    cursor:default;
+    transform:none;
+    box-shadow:none;
+  }
+
+  /* ---------- FULLSCREEN TOGGLE ---------- */
+  .fs-btn{
+    position:absolute;
+    top:clamp(10px,2vh,20px);
+    right:clamp(10px,2vw,20px);
+    width:clamp(36px,5vmin,46px);
+    height:clamp(36px,5vmin,46px);
+    border-radius:50%;
+    border:2px solid var(--teal-dark);
+    background:var(--white);
+    color:var(--teal-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:clamp(14px,2.2vmin,18px);
+    z-index:20;
+    box-shadow:0 4px 10px rgba(0,0,0,.12);
+  }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,30,26,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .modal-overlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  .modal-card{
+    width:min(86vw, 380px);
+    background:var(--white);
+    border-radius:24px;
+    padding:clamp(20px,4vh,32px) clamp(20px,4vw,28px);
+    text-align:center;
+    position:relative;
+    transform:translateY(24px) scale(.92);
+    transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 30px 60px rgba(0,0,0,.3);
+    border-top:6px solid var(--teal-dark);
+  }
+  .modal-overlay.show .modal-card{
+    transform:translateY(0) scale(1);
+  }
+
+  .modal-eyebrow{
+    font-size:clamp(11px,1.6vmin,13px);
+    font-weight:700;
+    color:var(--gold);
+    letter-spacing:.5px;
+  }
+  .modal-icon{
+    font-size:clamp(46px,9vmin,64px);
+    margin:10px 0 6px;
+    line-height:1;
+  }
+  .modal-title{
+    font-size:clamp(20px,3.4vmin,26px);
+    font-family:'Plus Jakarta Sans', sans-serif;
+    font-weight:900;
+    color:var(--ink);
+    margin:4px 0 6px;
+  }
+  .modal-sub{
+    font-size:clamp(13px,2vmin,15px);
+    font-family:'Plus Jakarta Sans', sans-serif;
+    color:#5a6a67;
+    margin:0 0 18px;
+    line-height:1.4;
+  }
+  .modal-close{
+    display:inline-block;
+    background:var(--teal-dark);
+    color:var(--white);
+    font-weight:800;
+    font-size:clamp(13px,2vmin,15px);
+    padding:10px 30px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+  }
+
+  @media (max-width: 480px){
+    .wheel-wrap{width:min(88vmin, 640px); height:min(88vmin, 640px);}
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <button class="fs-btn" id="fsBtn" title="Toggle fullscreen">⛶</button>
+
+  <div class="brandbar">
+    
+  </div>
+
+  <div class="wheel-wrap">
+    <svg class="pointer" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g>
+        <line x1="42" y1="2" x2="42" y2="16" stroke="#0f6d5f" stroke-width="4" stroke-linecap="round"/>
+        <line x1="50" y1="0" x2="50" y2="16" stroke="#0f6d5f" stroke-width="4" stroke-linecap="round"/>
+        <line x1="58" y1="2" x2="58" y2="16" stroke="#0f6d5f" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="30,22 70,22 50,58" fill="#161616"/>
+      </g>
+    </svg>
+
+    <div class="wheel-outer">
+      <div class="wheel-ring">
+        <svg id="wheelSVG" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <div class="hub" id="hub">
+      <img src="assets/centerlogo.png" style="width:60%; height:auto;" alt="Sméan Logo" class="logo">
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">SPIN THE WHEEL</button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card">
+    <div class="modal-eyebrow">CONGRATULATIONS</div>
+    <div class="modal-icon" id="modalIcon">🎁</div>
+    <div class="modal-title" id="modalTitle">You won 1H Credits!</div>
+    <div class="modal-sub" id="modalSub">Your prize has been added to your account.</div>
+    <button class="modal-close" id="modalClose">Awesome!</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   SLICE DEFINITIONS
+   8 equal 45° slices, matching the Sméan reference wheel.
+   Visual order (clockwise from top, index 0 = top/12 o'clock):
+   0: 1H credit   1: $5 Premium   2: 1H credit   3: 2H credit
+   4: 1H credit   5: 2H credit    6: Water Bottle 7: 2H credit
+   ========================================================= */
+const SLICES = [
+  { key:'1h',    label:['1H CREDITS','$1 PACKAGE'], icon:'assets/icons/wallet.png', fill:'#ffffff', text:'#161616', badge:'#0f6d5f' },
+  { key:'5',     label:['PREMIUM','$5 PACKAGE'],     icon:'assets/icons/dollar.png', fill:'#ffffff', text:'#161616', badge:'#cf9a35', badgeSize:12, gold:true },
+  { key:'1h',    label:['1H CREDITS','$1 PACKAGE'], icon:'assets/icons/wallet.png', fill:'#ffffff', text:'#161616', badge:'#0f6d5f' },
+  { key:'2h',    label:['2H CREDITS','$2 PACKAGE'],icon:'assets/icons/gift.png', fill:'#0f6d5f', text:'#ffffff', badge:'#ffffff', badgeText:'#0f6d5f' },
+  { key:'1h',    label:['1H CREDITS','$1 PACKAGE'], icon:'assets/icons/wallet.png', fill:'#ffffff', text:'#161616', badge:'#0f6d5f' },
+  { key:'2h',    label:['2H CREDITS','$2 PACKAGE'],icon:'assets/icons/gift.png', fill:'#0f6d5f', text:'#ffffff', badge:'#ffffff', badgeText:'#0f6d5f' },
+  { key:'bottle',label:['TUMBLR','Smean'],           icon:'assets/icons/bottles.png', fill:'#ffffff', text:'#0f6d5f', badge:'#cf9a35', badgeTextC:'#ffffff', gold:true },
+  { key:'2h',    label:['2H CREDITS','$2 PACKAGE'],icon:'assets/icons/gift.png', fill:'#0f6d5f', text:'#ffffff', badge:'#ffffff', badgeText:'#0f6d5f' },
+];
+
+/* Exact win probabilities requested */
+const PROBS = { '1h':0.60, '2h':0.30, '5':0.09, 'bottle':0.01 };
+
+const PRIZE_META = {
+  '1h':     { icon:'assets/icons/smean-blue.png', title:'You won 1H Credits!',      sub:'1 hour of transcription credits will be added to your account.' },
+  '2h':     { icon:'assets/icons/smean-blue.png', title:'You won 2H Credits!',      sub:'2 hours of transcription credits will be added to your account.' },
+  '5':      { icon:'assets/icons/dollar.png', title:'You won the $5 Premium Package!', sub:'Our team will reach out to activate your premium package.' },
+  'bottle': { icon:'assets/icons/bottles.png', title:'You won a Smean Tumbler!', sub:'Congrats! Show this to claim your bottle.' },
+};
+
+const N = SLICES.length;
+const SLICE_ANGLE = 360 / N; // 45deg
+const svg = document.getElementById('wheelSVG');
+const CX = 200, CY = 200, R = 198;
+
+function polar(cx, cy, r, angleDeg){
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+function buildWheel(){
+  let html = '';
+  SLICES.forEach((s, i) => {
+    const start = i * SLICE_ANGLE;
+    const end = start + SLICE_ANGLE;
+    const p1 = polar(CX, CY, R, start);
+    const p2 = polar(CX, CY, R, end);
+    const mid = start + SLICE_ANGLE/2;
+
+    html += `<path d="M${CX},${CY} L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${R},${R} 0 0,1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z"
+              fill="${s.fill}" stroke="#e7e3d9" stroke-width="1"/>`;
+
+    if (s.gold){
+      const gp1 = polar(CX, CY, R-4, start+1);
+      const gp2 = polar(CX, CY, R-4, end-1);
+      html += `<path d="M${CX},${CY} L${gp1.x.toFixed(2)},${gp1.y.toFixed(2)} A${R-4},${R-4} 0 0,1 ${gp2.x.toFixed(2)},${gp2.y.toFixed(2)} Z"
+                fill="none" stroke="#cf9a35" stroke-width="6"/>`;
+    }
+
+    /* icon */
+    const iconPos = polar(CX, CY, R*0.46, mid);
+    if (s.icon.endsWith('.png')) {
+      html += `<image href="${s.icon}"
+        x="${(iconPos.x - 20).toFixed(2)}"
+        y="${(iconPos.y - 35).toFixed(2)}"
+        width="40"
+        height="40"
+        preserveAspectRatio="xMidYMid meet"
+        transform="rotate(${mid}, ${iconPos.x.toFixed(2)}, ${iconPos.y.toFixed(2)})"/>`;
+    } else {
+      html += `<text x="${iconPos.x.toFixed(2)}" y="${iconPos.y.toFixed(2)}"
+                font-size="30" text-anchor="middle" dominant-baseline="middle"
+                transform="rotate(${mid}, ${iconPos.x.toFixed(2)}, ${iconPos.y.toFixed(2)})">${s.icon}</text>`;
+    }
+
+    /* main label line */
+    const l1Pos = polar(CX, CY, R*0.72, mid);
+    html += `<text x="${l1Pos.x.toFixed(2)}" y="${l1Pos.y.toFixed(2)}"
+              font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="14.5"
+              fill="${s.text}" text-anchor="middle" dominant-baseline="middle"
+              transform="rotate(${mid}, ${l1Pos.x.toFixed(2)}, ${l1Pos.y.toFixed(2)})">${s.label[0]}</text>`;
+
+    /* badge pill (second label) */
+    const badgePos = polar(CX, CY, R*0.855, mid);
+    const badgeFill = s.badge;
+    const badgeTxt = s.badgeText || s.badgeTextC || '#ffffff';
+    const pillW = s.label[1].length * 6.4 + 20;
+    html += `<g transform="rotate(${mid}, ${badgePos.x.toFixed(2)}, ${badgePos.y.toFixed(2)})">
+                <rect x="${(badgePos.x - pillW/2).toFixed(2)}" y="${(badgePos.y-10).toFixed(2)}"
+                      width="${pillW.toFixed(2)}" height="20" rx="10" fill="${badgeFill}"/>
+                <text x="${badgePos.x.toFixed(2)}" y="${(badgePos.y+1).toFixed(2)}"
+                      font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="${s.badgeSize || 10}"
+                      fill="${badgeTxt}" text-anchor="middle" dominant-baseline="middle">${s.label[1]}</text>
+              </g>`;
+  });
+
+  /* boundary dots */
+  for (let i=0;i<N;i++){
+    const a = i*SLICE_ANGLE;
+    const d = polar(CX, CY, R, a);
+    html += `<circle class="dot" cx="${d.x.toFixed(2)}" cy="${d.y.toFixed(2)}" r="5"/>`;
+  }
+
+  svg.innerHTML = html;
+}
+buildWheel();
+
+/* =========================================================
+   SPIN LOGIC
+   1. Pick a prize category by weighted probability.
+   2. Pick a random physical slice matching that category.
+   3. Rotate so that slice lands under the top pointer.
+   ========================================================= */
+let currentRotation = 0;
+let spinning = false;
+
+function weightedPick(){
+  const r = Math.random();
+  let acc = 0;
+  for (const key in PROBS){
+    acc += PROBS[key];
+    if (r <= acc) return key;
+  }
+  return '1h';
+}
+
+function slicesForKey(key){
+  const out = [];
+  SLICES.forEach((s,i) => { if (s.key === key) out.push(i); });
+  return out;
+}
+
+function spin(){
+  if (spinning) return;
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('hub').classList.add('disabled');
+
+  const prizeKey = weightedPick();
+  const candidates = slicesForKey(prizeKey);
+  const chosenIndex = candidates[Math.floor(Math.random() * candidates.length)];
+
+  const sliceCenter = chosenIndex * SLICE_ANGLE + SLICE_ANGLE/2;
+  const jitter = (Math.random() - 0.5) * (SLICE_ANGLE * 0.6);
+  const targetWithinCircle = ((360 - (sliceCenter + jitter)) % 360 + 360) % 360;
+
+  const fullSpins = 6 + Math.floor(Math.random()*3); // 6-8 full turns
+  const prevMod = ((currentRotation % 360) + 360) % 360;
+  let delta = targetWithinCircle - prevMod;
+  delta = ((delta % 360) + 360) % 360;
+
+  currentRotation += fullSpins * 360 + delta;
+
+  svg.classList.add('spinning');
+  svg.style.transform = `rotate(${currentRotation}deg)`;
+
+  setTimeout(() => {
+    showWinner(prizeKey);
+    spinning = false;
+    document.getElementById('spinBtn').disabled = false;
+    document.getElementById('hub').classList.remove('disabled');
+  }, 4300);
+}
+
+function showWinner(key){
+  const meta = PRIZE_META[key];
+  const modalIcon = document.getElementById('modalIcon');
+  if (meta.icon.endsWith('.png')) {
+    modalIcon.innerHTML = `<img src="${meta.icon}" alt="Sméan water bottle" style="width:64px;height:64px;object-fit:contain;">`;
+  } else {
+    modalIcon.textContent = meta.icon;
+  }
+  document.getElementById('modalTitle').textContent = meta.title;
+  document.getElementById('modalSub').textContent = meta.sub;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+document.getElementById('spinBtn').addEventListener('click', spin);
+document.getElementById('hub').addEventListener('click', spin);
+document.getElementById('modalClose').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('show');
+});
+
+/* Fullscreen toggle */
+const fsBtn = document.getElementById('fsBtn');
+fsBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement){
+    document.documentElement.requestFullscreen?.().catch(()=>{});
+  } else {
+    document.exitFullscreen?.();
+  }
+});
+</script>
+</body>
+</html>
