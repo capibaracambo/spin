@@ -1,4 +1,4 @@
-# Sméan Spin Wheel
+# Spin Wheel
 
 Single-page static spin-to-win wheel. No build step — `index.html` plus `assets/` is the whole site.
 
